@@ -84,7 +84,7 @@ class MainActivity : Activity() {
         val title=when(t.type){"income"->"↑ ${t.category}";"expense"->"↓ ${t.category}";"transfer"->"↔ Transfer";else->"Saldo awal"}
         val detail=when(t.type){"income"->"Ke ${names[t.toId]?:"rekening"}";"expense"->"Dari ${names[t.fromId]?:"rekening"}";"transfer"->"${names[t.fromId]?:"?"} → ${names[t.toId]?:"?"}";else->"Ke ${names[t.toId]?:"rekening"}"}
         val r=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(14,11,14,11);setBackgroundColor(panel)}
-        val top=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL};top.addView(tv(title,14f,white,true),LinearLayout.LayoutParams(0,-2,1f));top.addView(tv(if(t.type=="income")"+ ${money(t.amount)}" else if(t.type=="expense")"- ${money(t.amount)}" else money(t.amount),14f,if(t.type=="income")green else if(t.type=="expense")red:accent,true));r.addView(top)
+        val top=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL};top.addView(tv(title,14f,white,true),LinearLayout.LayoutParams(0,-2,1f));top.addView(tv(if(t.type=="income")"+ ${money(t.amount)}" else if(t.type=="expense")"- ${money(t.amount)}" else money(t.amount),14f,if(t.type=="income") green else if(t.type=="expense") red else accent,true));r.addView(top)
         r.addView(tv("${t.date} • $detail${if(t.note.isNotBlank())" • ${t.note}" else ""}",11f,muted));r.setOnClickListener{editTransactionDialog(t)}
         content.addView(r,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=7})
     }
@@ -132,7 +132,7 @@ class MainActivity : Activity() {
         while(content.childCount>4)content.removeViewAt(4)
         val p=period(pos,from,to);val tx=db.transactions(100000,fromDate=p.first,toDate=p.second)
         val inc=tx.filter{it.type=="income"}.sumOf{it.amount};val exp=tx.filter{it.type=="expense"}.sumOf{it.amount}
-        card("Total pemasukan",money(inc),green);card("Total pengeluaran",money(exp),red);card("Selisih",money(inc-exp),if(inc>=exp)green:red)
+        card("Total pemasukan",money(inc),green);card("Total pengeluaran",money(exp),red);card("Selisih",money(inc-exp),if(inc>=exp) green else red)
         section("Pengeluaran per kategori")
         val cats=tx.filter{it.type=="expense"}.groupBy{it.category}.mapValues{it.value.sumOf{v->v.amount}}.toList().sortedByDescending{it.second}
         if(cats.isEmpty())content.addView(tv("Belum ada pengeluaran pada periode ini.",12f,muted))
@@ -167,9 +167,9 @@ class MainActivity : Activity() {
         val types=arrayOf("Pemasukan","Pengeluaran");val sp=Spinner(this);sp.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,types)
         val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};val scroll=ScrollView(this);scroll.addView(list)
         fun render(){list.removeAllViews();val type=if(sp.selectedItemPosition==0)"income" else "expense";db.categories(type).forEach{c->
-            val r=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL};r.addView(tv(c.name,14f,white,true),LinearLayout.LayoutParams(0,50,1f));r.addView(button("Edit"){editCategory(c)});r.addView(button("Hapus"){confirm("Hapus kategori ${c.name}?"){db.deleteCategory(c.id);render()}});list.addView(r)}}
+            val r=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL};r.addView(tv(c.name,14f,white,true),LinearLayout.LayoutParams(0,50,1f));r.addView(button("Edit",{editCategory(c)}));r.addView(button("Hapus",{confirm("Hapus kategori ${c.name}?"){db.deleteCategory(c.id);render()}}));list.addView(r)}}
         sp.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,pos:Int,id:Long){render()}}
-        val add=button("+ Kategori"){val n=input("Nama kategori");AlertDialog.Builder(this).setTitle("Tambah kategori").setView(n).setNegativeButton("Batal",null).setPositiveButton("Simpan"){_,_->try{db.addCategory(n.text.toString(),if(sp.selectedItemPosition==0)"income" else "expense");render()}catch(e:Exception){toast(e.message?:"Gagal")}}.show()}
+        val add=button("+ Kategori",{val n=input("Nama kategori");AlertDialog.Builder(this).setTitle("Tambah kategori").setView(n).setNegativeButton("Batal",null).setPositiveButton("Simpan"){_,_->try{db.addCategory(n.text.toString(),if(sp.selectedItemPosition==0)"income" else "expense");render()}catch(e:Exception){toast(e.message?:"Gagal")}}.show())
         val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(18,4,18,0);addView(sp);addView(add);addView(scroll,LinearLayout.LayoutParams(-1,0,1f))}
         AlertDialog.Builder(this).setTitle("Kategori").setView(box).setPositiveButton("Selesai",null).show()
     }
@@ -239,12 +239,12 @@ class MainActivity : Activity() {
     private object JSONObjectValidator{fun validate(raw:String){val o=org.json.JSONObject(raw);require(o.optString("app")=="duitw"){"File bukan backup duitw"};require(o.has("accounts")&&o.has("transactions")){"Backup tidak lengkap"}}}
 
     private fun confirm(message:String,yes:()->Unit){AlertDialog.Builder(this).setMessage(message).setNegativeButton("Batal",null).setPositiveButton("Ya"){_,_->yes()}.show()}
-    private class MonthChart(context: Context, private val db: FinanceDb) : View(context) {
+    private inner class MonthChart(context: Context, private val db: FinanceDb) : View(context) {
         private val paint=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
         override fun onDraw(c:android.graphics.Canvas){
             super.onDraw(c)
             paint.textSize=11f;paint.color=Color.rgb(150,164,183)
-            val months=(0..5).map{YearMonth.now().minusMonths(5-it)}
+            val months=(0..5).map{YearMonth.now().minusMonths((5-it).toLong())}
             val vals=months.map{m->
                 val tx=db.transactions(100000,fromDate=m.toString()+"-01",toDate=m.toString()+"-"+m.lengthOfMonth())
                 tx.filter{it.type=="income"}.sumOf{it.amount} to tx.filter{it.type=="expense"}.sumOf{it.amount}

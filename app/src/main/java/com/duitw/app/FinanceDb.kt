@@ -36,7 +36,7 @@ class FinanceDb(context: Context) : SQLiteOpenHelper(context, "duitw.db", null, 
             seedCategories(db)
         }
         if (oldVersion < 3) {
-            try { db.execSQL("ALTER TABLE transactions ADD COLUMN debt_id INTEGER NOT NULL DEFAULT 0") } catch (_: Exception) {}
+            try { db.execSQL("ALTER TABLE transactions ADD COLUMN debt_id INTEGER NOT NULL DEFAULT 0") } catch (e: Exception) {}
         }
         recomputeBalances(db)
     }
@@ -115,7 +115,8 @@ class FinanceDb(context: Context) : SQLiteOpenHelper(context, "duitw.db", null, 
         if(toDate.isNotBlank()){w.add("t.date<=?");args.add(toDate)}
         if(category.isNotBlank()){w.add("t.category=?");args.add(category)}
         if(accountId>0){w.add("(t.from_id=? OR t.to_id=?)");args.add(accountId.toString());args.add(accountId.toString())}
-        val sql="SELECT t.id,t.date,t.type,t.amount,t.category,COALESCE(t.note,''),t.from_id,t.to_id,t.debt_id FROM transactions t"+if(w.isEmpty())"" else " WHERE "+w.joinToString(" AND ")+" ORDER BY t.date DESC,t.id DESC LIMIT ?"
+        val where=if(w.isEmpty()) "" else " WHERE "+w.joinToString(" AND ")
+        val sql="SELECT t.id,t.date,t.type,t.amount,t.category,COALESCE(t.note,''),t.from_id,t.to_id,t.debt_id FROM transactions t"+where+" ORDER BY t.date DESC,t.id DESC LIMIT ?"
         args.add(limit.toString())
         return readableDatabase.rawQuery(sql,args.toTypedArray()).use{c->buildList{while(c.moveToNext())add(Tx(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3),c.getString(4),c.getString(5),c.getLong(6),c.getLong(7),c.getLong(8)))}}
     }
@@ -137,20 +138,20 @@ class FinanceDb(context: Context) : SQLiteOpenHelper(context, "duitw.db", null, 
     }
     fun addDebt(kind:String,person:String,amount:Long,date:String,note:String){validateAmountDate(amount,date);require(person.trim().isNotEmpty()){"Nama pihak wajib diisi"};writableDatabase.insertOrThrow("debts",null,ContentValues().apply{put("kind",kind);put("person",person.trim());put("amount",amount);put("date",date);put("note",note)})}
     fun deleteDebt(id:Long){require(debtPayments(id).isEmpty()){"Hapus riwayat pembayaran terlebih dahulu"};writableDatabase.delete("debts","id=?",arrayOf(id.toString()))}
-    fun debtPayments(id:Long):List<DebtPayment>=readableDatabase.rawQuery("SELECT id,debt_id,date,amount,account_id,COALESCE(note,'') FROM debt_payments WHERE debt_id=? ORDER BY date DESC,id DESC",arrayOf(id.toString())).use{c->buildList{while(c.moveToNext())add(DebtPayment(c.getLong(0),c.getLong(1),c.getString(2),c.getLong(3),c.getLong(4),c.getString(5)))}}
+    fun debtPayments(id:Long):List<DebtPayment> = readableDatabase.rawQuery("SELECT id,debt_id,date,amount,account_id,COALESCE(note,'') FROM debt_payments WHERE debt_id=? ORDER BY date DESC,id DESC",arrayOf(id.toString())).use{c->buildList{while(c.moveToNext())add(DebtPayment(c.getLong(0),c.getLong(1),c.getString(2),c.getLong(3),c.getLong(4),c.getString(5)))}}
     fun addDebtPayment(debtId:Long,amount:Long,accountId:Long,date:String,note:String){
         validateAmountDate(amount,date);val debt=debts().firstOrNull{it.id==debtId}?:error("Data tidak ditemukan");require(debt.remaining()>=amount){"Pembayaran melebihi sisa kewajiban/piutang"};require(accountId>0){"Rekening wajib dipilih"}
         val d=writableDatabase;d.beginTransaction();try{
             d.insertOrThrow("debt_payments",null,ContentValues().apply{put("debt_id",debtId);put("amount",amount);put("account_id",accountId);put("date",date);put("note",note)})
             val type=if(debt.kind=="receivable")"income" else "expense"
-            d.insertOrThrow("transactions",null,ContentValues().apply{put("date",date);put("type",type);put("amount",amount);put("category",if(type=="income")"Pelunasan piutang" else "Pembayaran kewajiban");put("note",note);put("from_id",if(type=="expense")accountId else 0);put("to_id",if(type=="income")accountId else 0);put("debt_id",debtId)})
+            d.insertOrThrow("transactions",null,ContentValues().apply{put("date",date);put("type",type);put("amount",amount);put("category",if(type=="income")"Pelunasan piutang" else "Pembayaran kewajiban");put("note",note);put("from_id",if(type=="expense")accountId else 0L);put("to_id",if(type=="income")accountId else 0L);put("debt_id",debtId)})
             recomputeBalances(d);d.setTransactionSuccessful()
         }finally{d.endTransaction()}
     }
     private fun Debt.remaining()=amount-paid
 
     fun setting(key:String,default:String=""):String=readableDatabase.rawQuery("SELECT value FROM settings WHERE key=?",arrayOf(key)).use{if(it.moveToFirst())it.getString(0)else default}
-    fun setSetting(key:String,value:String){writableDatabase.insertWithOnConflict("settings",ContentValues().apply{put("key",key);put("value",value)},SQLiteDatabase.CONFLICT_REPLACE)}
+    fun setSetting(key:String,value:String){writableDatabase.insertWithOnConflict("settings",null,ContentValues().apply{put("key",key);put("value",value)},SQLiteDatabase.CONFLICT_REPLACE)}
 
     fun exportJson():String{
         val root=JSONObject().put("app","duitw").put("version",3)

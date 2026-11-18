@@ -69,7 +69,7 @@ class MainActivity : Activity() {
         val inc=tx.filter{it.type=="income"}.sumOf{it.amount};val exp=tx.filter{it.type=="expense"}.sumOf{it.amount}
         val grid=LinearLayout(this);val a=LinearLayout.LayoutParams(0,-2,1f).apply{rightMargin=5};val b=LinearLayout.LayoutParams(0,-2,1f).apply{leftMargin=5}
         grid.addView(stat("Pemasukan",money(inc),green),a);grid.addView(stat("Pengeluaran",money(exp),red),b);content.addView(grid,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=10})
-        section("Arus kas bulan ini");card("Selisih",money(inc-exp),if(inc-exp>=0)green:red,"Pemasukan − pengeluaran")
+        section("Arus kas bulan ini");card("Selisih",money(inc-exp),if(inc-exp>=0) green else red,"Pemasukan − pengeluaran")
         section("Grafik 6 bulan terakhir")
         content.addView(MonthChart(this, db), LinearLayout.LayoutParams(-1,190).apply{bottomMargin=10})
         section("Rekening");db.accounts().forEach{a->row(a.name,{accountDialog(a)}, "${a.kind} • ${money(a.balance)}")}
@@ -181,7 +181,7 @@ class MainActivity : Activity() {
         existing?.let{type.setSelection(if(it.type=="income")0 else if(it.type=="expense")1 else 2)}
         val amount=input("Nominal (Rp)",existing?.amount?.toString()?:"",true)
         val cat=Spinner(this);val from=Spinner(this);val to=Spinner(this)
-        fun loadCats(){cat.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,db.categories(if(type.selectedItemPosition==0)"income" else "expense").map{it.name})}
+        fun loadCats(){val names=db.categories(if(type.selectedItemPosition==0)"income" else "expense").map{it.name};cat.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,names);existing?.let{e->val i=names.indexOf(e.category);if(i>=0)cat.setSelection(i)}}
         cat.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,db.categories("income").map{it.name})
         from.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,ac.map{it.name});to.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,ac.map{it.name})
         val note=input("Catatan (opsional)",existing?.note?:"");val d=input("Tanggal YYYY-MM-DD",existing?.date?:date)
@@ -194,7 +194,7 @@ class MainActivity : Activity() {
         val dialog=AlertDialog.Builder(this).setTitle(if(existing==null)"Catat transaksi" else "Edit transaksi").setView(ScrollView(this).apply{addView(box)}).setNegativeButton("Batal",null).setPositiveButton("Simpan",null).apply{if(existing!=null)setNeutralButton("Hapus",null)}.create()
         dialog.setOnShowListener{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
             try{val n=amount.text.toString().toLong();val dt=d.text.toString();val p=type.selectedItemPosition;val c=cat.selectedItem?.toString()?:"Lainnya"
-                val f=if(p==0)0 else ac[from.selectedItemPosition].id;val t=if(p==1)0 else ac[to.selectedItemPosition].id
+                val f:Long=if(p==0)0L else ac[from.selectedItemPosition].id;val t:Long=if(p==1)0L else ac[to.selectedItemPosition].id
                 if(existing==null)db.addTransaction(if(p==0)"income" else if(p==1)"expense" else "transfer",n,c,note.text.toString(),f,t,dt)
                 else db.updateTransaction(existing.id,if(p==0)"income" else if(p==1)"expense" else "transfer",n,c,note.text.toString(),f,t,dt,existing.debtId)
                 dialog.dismiss();showTransactions()
@@ -234,8 +234,23 @@ class MainActivity : Activity() {
     private fun backup(){val i=Intent(Intent.ACTION_CREATE_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="application/json";putExtra(Intent.EXTRA_TITLE,"duitw-backup-${LocalDate.now()}.json")};startActivityForResult(i,exportCode)}
     private fun restore(){val i=Intent(Intent.ACTION_OPEN_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="application/json"};startActivityForResult(i,importCode)}
     @Deprecated("Legacy document picker callback")
-    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){super.onActivityResult(requestCode,resultCode,data);if(resultCode!=RESULT_OK)return;val uri=data?.data?:return
-        try{if(requestCode==exportCode)contentResolver.openOutputStream(uri)?.use{it.write(db.exportJson().toByteArray())};else if(requestCode==importCode){val raw=contentResolver.openInputStream(uri)?.bufferedReader()?.use{it.readText()}?:error("File kosong");JSONObjectValidator.validate(raw);confirm("Restore akan mengganti seluruh data lokal. Lanjutkan?"){try{db.restoreJson(raw);toast("Restore berhasil");showHome()}catch(e:Exception){toast(e.message?:"Restore gagal")}}};if(requestCode==exportCode)toast("Backup berhasil")}catch(e:Exception){toast(e.message?:"File tidak dapat diproses")}}
+    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
+        super.onActivityResult(requestCode,resultCode,data)
+        if(resultCode!=RESULT_OK)return
+        val uri=data?.data?:return
+        try{
+            if(requestCode==exportCode){
+                contentResolver.openOutputStream(uri)?.use{it.write(db.exportJson().toByteArray())}
+                toast("Backup berhasil")
+            }else if(requestCode==importCode){
+                val raw=contentResolver.openInputStream(uri)?.bufferedReader()?.use{it.readText()}?:error("File kosong")
+                JSONObjectValidator.validate(raw)
+                confirm("Restore akan mengganti seluruh data lokal. Lanjutkan?"){
+                    try{db.restoreJson(raw);toast("Restore berhasil");showHome()}catch(e:Exception){toast(e.message?:"Restore gagal")}
+                }
+            }
+        }catch(e:Exception){toast(e.message?:"File tidak dapat diproses")}
+    }
     private object JSONObjectValidator{fun validate(raw:String){val o=org.json.JSONObject(raw);require(o.optString("app")=="duitw"){"File bukan backup duitw"};require(o.has("accounts")&&o.has("transactions")){"Backup tidak lengkap"}}}
 
     private fun confirm(message:String,yes:()->Unit){AlertDialog.Builder(this).setMessage(message).setNegativeButton("Batal",null).setPositiveButton("Ya"){_,_->yes()}.show()}

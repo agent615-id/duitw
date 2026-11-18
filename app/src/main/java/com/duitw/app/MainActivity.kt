@@ -169,7 +169,7 @@ class MainActivity : Activity() {
         fun render(){list.removeAllViews();val type=if(sp.selectedItemPosition==0)"income" else "expense";db.categories(type).forEach{c->
             val r=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL};r.addView(tv(c.name,14f,white,true),LinearLayout.LayoutParams(0,50,1f));r.addView(button("Edit",{editCategory(c)}));r.addView(button("Hapus",{confirm("Hapus kategori ${c.name}?"){db.deleteCategory(c.id);render()}}));list.addView(r)}}
         sp.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{override fun onNothingSelected(p:AdapterView<*>?){};override fun onItemSelected(p:AdapterView<*>?,v:View?,pos:Int,id:Long){render()}}
-        val add=button("+ Kategori",{val n=input("Nama kategori");AlertDialog.Builder(this).setTitle("Tambah kategori").setView(n).setNegativeButton("Batal",null).setPositiveButton("Simpan"){_,_->try{db.addCategory(n.text.toString(),if(sp.selectedItemPosition==0)"income" else "expense");render()}catch(e:Exception){toast(e.message?:"Gagal")}}.show())
+        val add=button("+ Kategori",{val n=input("Nama kategori");AlertDialog.Builder(this).setTitle("Tambah kategori").setView(n).setNegativeButton("Batal",null).setPositiveButton("Simpan"){_,_->try{db.addCategory(n.text.toString(),if(sp.selectedItemPosition==0)"income" else "expense");render()}catch(e:Exception){toast(e.message?:"Gagal")}}.show()})
         val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(18,4,18,0);addView(sp);addView(add);addView(scroll,LinearLayout.LayoutParams(-1,0,1f))}
         AlertDialog.Builder(this).setTitle("Kategori").setView(box).setPositiveButton("Selesai",null).show()
     }

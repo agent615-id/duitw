@@ -1,21 +1,25 @@
 {
-  "name": "duitw",
-  "version": "2.0.0",
+  "name": "duitw-android",
+  "version": "1.0.0",
   "private": true,
-  "description": "duitw - aplikasi pencatatan keuangan pribadi offline",
+  "description": "duitw personal finance Android app built with Capacitor",
   "scripts": {
-    "start": "npx http-server . -p 8080",
-    "android:add": "cap add android",
-    "android:sync": "cap sync android",
-    "android:open": "cap open android",
-    "android:build:debug": "cd android && ./gradlew assembleDebug"
+    "build": "node scripts/build.mjs",
+    "test": "node --check app.js && node --check scripts/build.mjs && node --check scripts/patch-android.mjs",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/filesystem": "^7.1.4",
+    "@capacitor/share": "^7.0.2",
+    "@capacitor/splash-screen": "^7.0.2",
+    "@capacitor/status-bar": "^7.0.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
-    "http-server": "^14.1.1"
+    "esbuild": "^0.25.0"
   }
 }

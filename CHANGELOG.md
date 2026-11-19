@@ -22,4 +22,3 @@
 - CSV + browser PDF export.
 - JSON backup/restore.
 - Responsive dark UI.
-\n## 2.1.0 — Android Capacitor\n- Menambahkan konfigurasi Capacitor Android.\n- Menambahkan ikon launcher Android dan adaptive icon.\n- Menambahkan workflow GitHub Actions untuk menghasilkan debug APK artifact.\n- Mempertahankan key localStorage `duitw_v1` dan source web asli.\n

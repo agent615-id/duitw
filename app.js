@@ -32,7 +32,10 @@ const compact = n => { const a=Math.abs(n), s=n<0?"-":""; if(a>=1e9)return s+(a/
 const ic = (id, cls="") => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${id}"/></svg>`;
 
 function load(){try{const x=JSON.parse(localStorage.getItem(KEY));return x&&x.version===1?x:structuredClone(DEFAULT)}catch{return structuredClone(DEFAULT)}}
-function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));return true}
+  catch(err){console.error("duitw: gagal menyimpan data lokal",err);toast("Penyimpanan penuh atau tidak tersedia. Segera buat backup.","error");return false}
+}
 
 let state = load();
 let currentView = "dashboard";
@@ -337,9 +340,29 @@ function submitPayment(e){e.preventDefault();const d=debt($("payment-debt-id").v
 function deleteTx(id){const t=state.transactions.find(x=>x.id===id);if(!t)return;if(!confirm("Hapus transaksi ini? Perubahan saldo akan dibatalkan."))return;if(t.linkedDebtId&&(t.type==="receivable_create"||t.type==="liability_create")){const d=debt(t.linkedDebtId);if(d&&state.transactions.some(x=>x.linkedDebtId===d.id&&x.type===`${d.kind}_payment`)){toast("Tidak dapat menghapus transaksi pembuka karena sudah ada pembayaran.","error");return}state.debts=state.debts.filter(x=>x.id!==t.linkedDebtId)}state.transactions=state.transactions.filter(x=>x.id!==id);save();toast("Transaksi dihapus.");renderAll()}
 function deleteAccount(id){if(state.transactions.some(t=>t.accountId===id||t.toAccountId===id)){toast("Rekening masih memiliki transaksi. Hapus/ubah transaksi terkait terlebih dahulu.","error");return}if(!confirm("Hapus rekening ini?"))return;state.accounts=state.accounts.filter(a=>a.id!==id);save();toast("Rekening dihapus.");renderAll()}
 function deleteDebt(id){const d=debt(id);if(!d)return;if(!confirm("Hapus data ini dan transaksi terkait?"))return;state.transactions=state.transactions.filter(t=>t.linkedDebtId!==id);state.debts=state.debts.filter(x=>x.id!==id);save();toast("Data dihapus.");renderAll()}
-function backup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`duitw-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href);toast("Backup JSON berhasil dibuat.")}
+async function backup(){
+  const filename=`duitw-backup-${today()}.json`, content=JSON.stringify(state,null,2);
+  if(window.duitwNative?.isNative?.()){
+    try{await window.duitwNative.exportFile(filename,content,"application/json");toast("Backup siap disimpan atau dibagikan.")}
+    catch(err){console.error(err);toast("Backup gagal dibuat. Coba lagi.","error")}
+    return;
+  }
+  const blob=new Blob([content],{type:"application/json"}),a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Backup JSON berhasil dibuat.")
+}
 function restore(){const f=$("restore-json").files[0];if(!f){toast("Pilih file JSON terlebih dahulu.","error");return}const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x||x.version!==1||!Array.isArray(x.accounts)||!Array.isArray(x.transactions)||!Array.isArray(x.debts))throw new Error();if(!confirm("Restore akan mengganti seluruh data saat ini. Lanjutkan?"))return;state=x;save();populateSelects();renderAll();toast("Data berhasil dipulihkan.")}catch{toast("File backup tidak valid.","error")}};r.readAsText(f)}
-function exportCSV(){const ts=getReportTransactions();const rows=[["Tanggal","Nama","Jenis","Kategori","Rekening","Rekening Tujuan","Nominal","Catatan"],...ts.map(t=>[t.date,t.name,txTypeLabel(t),t.category,account(t.accountId)?.name||"",account(t.toAccountId)?.name||"",t.amount,t.note||""])];const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n"),blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`duitw-laporan-${report.month}.csv`;a.click();URL.revokeObjectURL(a.href);toast("CSV berhasil diekspor.")}
+async function exportCSV(){
+  const ts=getReportTransactions(),rows=[["Tanggal","Nama","Jenis","Kategori","Rekening","Rekening Tujuan","Nominal","Catatan"],...ts.map(t=>[t.date,t.name,txTypeLabel(t),t.category,account(t.accountId)?.name||"",account(t.toAccountId)?.name||"",t.amount,t.note||""])];
+  const csv="\\ufeff"+rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\\n");
+  const filename=`duitw-laporan-${report.month}.csv`;
+  if(window.duitwNative?.isNative?.()){
+    try{await window.duitwNative.exportFile(filename,csv,"text/csv");toast("Laporan CSV siap disimpan atau dibagikan.")}
+    catch(err){console.error(err);toast("Ekspor CSV gagal.","error")}
+    return;
+  }
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);toast("CSV berhasil diekspor.")
+}
 function exportPDF(){window.print()}
 function renderAll(){populateSelects();renderDashboard();if(currentView==="transactions")renderTransactions();if(currentView==="accounts")renderAccounts();if(currentView==="debts")renderDebts();if(currentView==="reports")renderReports()}
 
@@ -362,6 +385,12 @@ document.addEventListener("click",e=>{
 });
 // Tutup dialog saat area gelap diketuk
 qsa("dialog.modal").forEach(dlg=>dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close()}));
+window.duitwNative?.onBackButton?.(()=>{
+  const openDialog=qsa("dialog[open]")[0];
+  if(openDialog){openDialog.close();return}
+  if(currentView!=="dashboard"){setView("dashboard");return}
+  window.duitwNative?.exitApp?.();
+});
 
 $("transaction-form").addEventListener("submit",submitTx);$("account-form").addEventListener("submit",submitAccount);$("debt-form").addEventListener("submit",submitDebt);$("payment-form").addEventListener("submit",submitPayment);
 $("tx-cancel").onclick=()=>$("transaction-dialog").close();$("account-cancel").onclick=()=>$("account-dialog").close();$("debt-cancel").onclick=()=>$("debt-dialog").close();$("payment-cancel").onclick=()=>$("payment-dialog").close();

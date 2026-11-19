@@ -1,95 +1,75 @@
-# duitw — Android + Capacitor
+# duitw — Android (Capacitor)
 
-Aplikasi pencatatan keuangan pribadi offline. Source web asli (`index.html`, `styles.css`, `app.js`) dipertahankan; Capacitor membungkusnya menjadi aplikasi Android.
+Aplikasi duitw dibangun dari source web asli (`index.html`, `styles.css`, `app.js`) dan dijalankan dari aset lokal di Android WebView. Tidak ada URL website eksternal, backend, CDN, atau request jaringan yang diperlukan untuk fitur utama.
 
-## Fitur yang dipertahankan
+## Isi proyek
 
-- Dashboard saldo, pemasukan, pengeluaran, piutang, dan kewajiban.
-- Rekening; transaksi pemasukan/pengeluaran/transfer/tarik tunai.
-- Piutang dan kewajiban terintegrasi dengan saldo rekening.
-- Pencarian, filter, pengurutan transaksi, dan laporan.
-- Ekspor CSV, cetak/Simpan sebagai PDF, backup dan restore JSON.
-- Antarmuka dark premium, mobile-first, bottom navigation, bottom sheet, dan grafik.
-- Semua data tetap offline di `localStorage` perangkat; tidak ada backend atau sinkronisasi cloud.
+- `index.html`, `styles.css`, `app.js` — UI dan logika web asli; desain dan fitur dipertahankan.
+- `native-bridge-src.js` — integrasi native Capacitor untuk status bar, tombol Back Android, dan ekspor file.
+- `capacitor.config.json` — app ID, nama, direktori web, splash screen, dan status bar.
+- `scripts/build.mjs` — menyiapkan bundle web offline ke `www/`.
+- `scripts/patch-android.mjs` — menerapkan ikon launcher, warna system bar, dan konfigurasi keyboard ke proyek Android hasil generate Capacitor.
+- `assets/` — ikon dan aset Android.
+- `.github/workflows/build.yml` — build APK otomatis dan upload artifact.
 
-## Penyimpanan data di Android
+## Build APK dengan GitHub Actions
 
-Aplikasi tetap menggunakan key `duitw_v1` dan mekanisme `localStorage` yang sudah ada. Capacitor menjalankan konten pada origin lokal HTTPS yang stabil (`https://localhost`), sehingga WebView menyimpan data secara persisten di penyimpanan privat aplikasi dan data tetap ada setelah aplikasi ditutup/dibuka kembali.
+1. Buat repository GitHub baru dan upload seluruh isi folder proyek ini.
+2. Pastikan workflow Actions diizinkan pada repository (tab **Actions**).
+3. Buka **Actions → Build duitw Android APK**.
+4. Pilih **Run workflow** untuk build manual, atau push ke branch `main`/`master`.
+5. Setelah job selesai, buka bagian **Artifacts** pada run tersebut dan unduh `duitw-apk`.
+6. Ekstrak artifact untuk memperoleh file `duitw.apk`, lalu instal pada perangkat Android.
 
-**Penting:** jangan menghapus data aplikasi atau uninstall aplikasi, karena tindakan tersebut dapat menghapus penyimpanan lokal. Gunakan menu Backup JSON secara berkala untuk salinan cadangan. Data aplikasi tidak disinkronkan ke perangkat lain.
+Workflow melakukan instalasi dependency, menyiapkan web bundle lokal, menghasilkan proyek Android Capacitor, menyinkronkan plugin, menerapkan resource Android, menjalankan Gradle `assembleDebug`, lalu mengunggah `release/duitw.apk`.
 
-## Build lokal (Windows / macOS / Linux)
+APK yang dihasilkan adalah **debug APK** yang dapat dipasang untuk pengujian/pemakaian langsung. Workflow menyimpan debug keystore melalui GitHub Actions cache agar signature tetap konsisten antar-build dan update APK dapat dipasang di atas versi sebelumnya. Jika cache dihapus/tereviksi, APK baru mungkin perlu dipasang ulang setelah backup data. Untuk distribusi Play Store atau rilis publik, buat signing key release dan tambahkan proses signing release secara terpisah; jangan menyimpan keystore atau password di source code.
 
-Prasyarat: Node.js 22, Java JDK 21, Android Studio + Android SDK (platform/build tools yang sesuai), dan koneksi internet saat pertama kali memasang dependency.
+## Build lokal
 
-1. Ekstrak source code.
-2. Dari folder proyek jalankan:
+Persyaratan: Node.js 22, Java 21, Android SDK (platform/build-tools yang dibutuhkan Gradle), dan koneksi internet saat pertama kali memasang dependency.
 
-   ```bash
-   npm install
-   npx cap add android
-   npx cap sync android
-   ```
+```bash
+npm install
+npm test
+npm run build
+npx cap add android
+npx cap sync android
+node scripts/patch-android.mjs
+cd android
+./gradlew assembleDebug
+```
 
-3. Salin ikon launcher dan resource adaptive icon:
+Hasil: `android/app/build/outputs/apk/debug/app-debug.apk`.
 
-   **Linux/macOS (Bash):**
-   ```bash
-   RES="android/app/src/main/res"
-   for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-     mkdir -p "$RES/mipmap-$density"
-     cp "resources/android/icon-$density.png" "$RES/mipmap-$density/ic_launcher.png"
-     cp "resources/android/icon-$density.png" "$RES/mipmap-$density/ic_launcher_round.png"
-   done
-   mkdir -p "$RES/drawable" "$RES/mipmap-anydpi-v26" "$RES/values"
-   cp resources/android/ic_launcher_foreground.png "$RES/drawable/"
-   cp resources/android/launcher_colors.xml "$RES/values/"
-   cp resources/android/ic_launcher.xml "$RES/mipmap-anydpi-v26/"
-   cp resources/android/ic_launcher_round.xml "$RES/mipmap-anydpi-v26/"
-   ```
-
-   Pada Windows PowerShell, salin file yang sama ke folder Android dengan nama tujuan yang sama.
-
-4. Build APK debug:
-
-   ```bash
-   cd android
-   ./gradlew assembleDebug
-   ```
-
-   Windows:
-   ```powershell
-   cd android
-   .\gradlew.bat assembleDebug
-   ```
-
-APK berada di `android/app/build/outputs/apk/debug/app-debug.apk`.
-
-## Build otomatis melalui GitHub Actions
-
-Workflow sudah tersedia di `.github/workflows/build.yml`.
-
-1. Buat repository GitHub baru lalu upload/push seluruh isi folder proyek ini.
-2. Buka tab **Actions** pada repository.
-3. Pilih workflow **Build Android APK**.
-4. Klik **Run workflow** (atau push commit ke branch `main`/`master`).
-5. Tunggu job **Build duitw APK** selesai dengan status hijau.
-6. Buka halaman run yang berhasil, gulir ke bagian **Artifacts**, lalu unduh **duitw-android-apk**.
-7. Ekstrak ZIP artifact; file di dalamnya bernama `app-debug.apk`.
-
-Artifact disimpan selama 30 hari. APK debug cocok untuk instalasi/pengujian langsung; distribusi Play Store memerlukan APK/AAB release yang ditandatangani dengan keystore milik Anda.
-
-## Identitas aplikasi
+## Konfigurasi Android
 
 - Nama aplikasi: `duitw`
-- Application ID: `com.duitw.app`
-- Capacitor: 7.x
-- Web directory: `www/` (salinan web dari source root; menghindari folder Android ikut tersalin ke WebView)
-- Android scheme: HTTPS lokal
+- Application ID / package: `id.duitw.app`
+- Web runtime: Capacitor Android WebView dengan `webDir: www`
+- UI dimuat dari file aplikasi lokal, bukan remote URL.
+- Splash screen menggunakan warna dasar `#070b12`.
+- Status bar dan navigation bar menggunakan warna gelap yang menyatu dengan UI.
+- Keyboard memakai `adjustResize`; CSS mempertahankan safe area Android.
+- Tombol Back Android menutup dialog aktif, kembali ke Dashboard, lalu keluar aplikasi bila sudah di Dashboard.
 
-## Catatan kompatibilitas
+## Offline dan penyimpanan
 
-- Tidak ada framework web atau CDN tambahan; UI dan logika aplikasi asli digunakan apa adanya.
-- `localStorage` tetap berada pada sandbox aplikasi Android.
-- Ekspor PDF memakai dialog print WebView/Android; ketersediaannya bergantung pada layanan print Android.
-- Build GitHub Actions menghasilkan **debug APK**. Tidak diperlukan secret signing untuk artifact ini.
+- Seluruh HTML, CSS, JavaScript, ikon, dan bridge dibundel ke `www/` dan dimuat lokal.
+- Data keuangan disimpan di `localStorage` WebView dengan key `duitw_v1`. Data tetap ada setelah aplikasi ditutup atau perangkat direstart, dan tidak dihapus oleh proses update normal selama application ID dan data app tetap sama.
+- Tidak ada database/server eksternal atau CDN.
+- Backup JSON dan ekspor CSV menggunakan native share sheet Android agar file dapat disimpan/dibagikan. Restore menggunakan pemilih file JSON.
+- Selalu simpan backup sebelum uninstall aplikasi atau menghapus data aplikasi; tindakan tersebut dapat menghapus penyimpanan lokal Android.
+
+## Aturan saldo yang dipertahankan
+
+- Transfer dan tarik tunai memindahkan saldo antar rekening, bukan pemasukan/pengeluaran.
+- Piutang baru mengurangi saldo rekening dan menambah aset piutang; pembayaran piutang menambah saldo dan mengurangi sisa piutang.
+- Kewajiban baru mengikuti model sumber web: dana kewajiban masuk ke rekening, tetapi tidak dihitung sebagai pemasukan; pembayaran kewajiban mengurangi saldo dan dicatat sebagai pengeluaran.
+- Pembayaran piutang/kewajiban dihubungkan ke satu data utang/piutang melalui `linkedDebtId`, sehingga sisa dihitung dari pembayaran terkait dan tidak menggandakan transaksi pembuka.
+
+## Pengujian dan batas verifikasi
+
+`npm test` memeriksa sintaks JavaScript dan skrip build/patch. Workflow GitHub Actions menjadi jalur build Android yang sebenarnya. Build APK dan uji perangkat/emulator perlu dijalankan pada runner Android atau perangkat Android; lingkungan pembuatan source ini tidak menyediakan Android SDK/Gradle, sehingga APK biner tidak dapat diklaim sudah berhasil dibangun di sini.
+
+Fitur PDF tetap menggunakan dialog print WebView (`window.print()`); ketersediaan dialog print dapat berbeda menurut versi Android WebView. Uji fungsi print pada perangkat target sebelum distribusi.

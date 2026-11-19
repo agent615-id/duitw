@@ -1,0 +1,17 @@
+{
+  "appId": "com.duitw.app",
+  "appName": "duitw",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#070b12"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070b12">
+  <meta name="mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-capable" content="yes">\n  <meta name="application-name" content="duitw">\n  <meta name="description" content="duitw — pencatatan keuangan pribadi yang sederhana, akurat, dan offline.">
+  <title>duitw — Personal Finance</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="toast-root" aria-live="polite"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Menu samping">
+      <div class="brand">
+        <div class="brand-mark">d</div>
+        <div><strong>duitw</strong><span>personal finance</span></div>
+      </div>
+      <nav class="nav" aria-label="Navigasi utama">
+        <button class="nav-item active" data-view="dashboard"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg>Dashboard</button>
+        <button class="nav-item" data-view="transactions"><svg class="ic" viewBox="0 0 24 24"><use href="#i-swap"/></svg>Transaksi</button>
+        <button class="nav-item" data-view="accounts"><svg class="ic" viewBox="0 0 24 24"><use href="#i-wallet"/></svg>Rekening</button>
+        <button class="nav-item" data-view="debts"><svg class="ic" viewBox="0 0 24 24"><use href="#i-hand"/></svg>Piutang &amp; Kewajiban</button>
+        <button class="nav-item" data-view="reports"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Laporan</button>
+        <button class="nav-item" data-view="settings"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Data &amp; Pengaturan</button>
+      </nav>
+      <div class="sidebar-foot"><span class="status-dot"></span><span>Data tersimpan di perangkat ini</span></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="brand-mini mobile-only"><div class="brand-mark sm">d</div></div>
+        <div class="page-title"><span id="eyebrow">Ringkasan</span><h1 id="view-title">Dashboard</h1></div>
+        <div class="top-actions">
+          <button class="ghost-btn desk-only" id="quick-income"><svg class="ic" viewBox="0 0 24 24"><use href="#i-down"/></svg>Pemasukan</button>
+          <button class="primary-btn desk-only" id="quick-expense"><svg class="ic" viewBox="0 0 24 24"><use href="#i-up"/></svg>Pengeluaran</button>
+          <button class="icon-btn mobile-only" data-view="settings" aria-label="Data dan pengaturan"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg></button>
+        </div>
+      </header>
+
+      <!-- DASHBOARD -->
+      <section class="content" id="view-dashboard">
+        <div class="dash-top">
+          <article class="hero-card">
+            <div class="hero-glow"></div>
+            <div class="hero-head">
+              <span class="hero-label">Total saldo</span>
+              <button class="chip-btn" id="dashboard-month-picker" aria-label="Buka laporan bulanan"><span id="dashboard-month">Bulan berjalan</span><svg class="ic xs" viewBox="0 0 24 24"><use href="#i-chev"/></svg></button>
+            </div>
+            <div class="hero-balance" id="stat-balance">Rp0</div>
+            <div class="hero-meta" id="stat-account-count">0 rekening</div>
+            <div class="flow-split">
+              <div class="flow-item in"><div class="fi-top"><span class="flow-ic"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-down"/></svg></span><small>Masuk bulan ini</small></div><b id="stat-income">Rp0</b></div>
+              <div class="flow-item out"><div class="fi-top"><span class="flow-ic"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-up"/></svg></span><small>Keluar bulan ini</small></div><b id="stat-expense">Rp0</b></div>
+            </div>
+            <div class="ratio-bar" id="ratio-bar" aria-hidden="true"><i class="r-in"></i><i class="r-out"></i></div>
+          </article>
+
+          <div class="quick-strip" aria-label="Aksi cepat">
+            <button class="qa" id="dashboard-add-transaction"><span class="qa-ic a1"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg></span><b>Catat</b></button>
+            <button class="qa" id="qa-transfer"><span class="qa-ic a2"><svg class="ic" viewBox="0 0 24 24"><use href="#i-swap"/></svg></span><b>Transfer</b></button>
+            <button class="qa" data-view-jump="accounts"><span class="qa-ic a3"><svg class="ic" viewBox="0 0 24 24"><use href="#i-wallet"/></svg></span><b>Rekening</b></button>
+            <button class="qa" data-view-jump="reports"><span class="qa-ic a4"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg></span><b>Laporan</b></button>
+          </div>
+        </div>
+
+        <div class="duo">
+          <button class="duo-card rec" data-view-jump="debts" data-debt-jump="receivables">
+            <span class="duo-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-in-arrow"/></svg></span>
+            <span class="duo-txt"><small>Piutang · akan diterima</small><b id="stat-receivable">Rp0</b></span>
+          </button>
+          <button class="duo-card lia" data-view-jump="debts" data-debt-jump="liabilities">
+            <span class="duo-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-out-arrow"/></svg></span>
+            <span class="duo-txt"><small>Kewajiban · harus dibayar</small><b id="stat-liability">Rp0</b></span>
+          </button>
+        </div>
+
+        <div class="section-line"><h3>Rekening</h3><button class="text-btn" data-view-jump="accounts">Lihat semua</button></div>
+        <div id="account-summary" class="mini-cards"></div>
+
+        <div class="dashboard-grid">
+          <article class="panel chart-panel">
+            <div class="panel-head"><div><h3>Arus kas 14 hari</h3><p class="muted">Pemasukan vs pengeluaran harian</p></div><span class="legend"><i class="income-dot"></i>Masuk<i class="expense-dot"></i>Keluar</span></div>
+            <div class="chart-box"><canvas id="cashflow-chart" height="250"></canvas><div class="chart-tip" id="cashflow-tip" hidden></div></div>
+          </article>
+          <article class="panel activity-panel">
+            <div class="panel-head"><div><h3>Aktivitas terbaru</h3><p class="muted">Transaksi terakhir</p></div><button class="text-btn" data-view-jump="transactions">Semua</button></div>
+            <div id="recent-transactions"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- TRANSAKSI -->
+      <section class="content hidden" id="view-transactions">
+        <div class="section-head sh-desk"><div><p class="muted">Semua aktivitas</p><h2>Transaksi</h2></div><button class="primary-btn desk-only" id="add-transaction"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Tambah transaksi</button></div>
+        <div class="tx-tools">
+          <div class="search-wrap"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-search"/></svg><input id="transaction-search" type="search" placeholder="Cari transaksi" aria-label="Cari transaksi"></div>
+          <button class="ghost-btn sort-btn" id="transaction-sort">Terbaru ↓</button>
+        </div>
+        <div class="chip-scroll" id="type-chips" aria-label="Filter jenis">
+          <button class="chip active" data-type-chip="all">Semua</button>
+          <button class="chip" data-type-chip="income">Pemasukan</button>
+          <button class="chip" data-type-chip="expense">Pengeluaran</button>
+          <button class="chip" data-type-chip="transfer">Transfer</button>
+          <button class="chip" data-type-chip="cash_withdrawal">Tarik tunai</button>
+          <button class="chip" data-type-chip="receivable_payment">Bayar piutang</button>
+          <button class="chip" data-type-chip="liability_payment">Bayar kewajiban</button>
+          <button class="chip" data-type-chip="receivable_create">Piutang baru</button>
+          <button class="chip" data-type-chip="liability_create">Kewajiban baru</button>
+        </div>
+        <div class="filter-row">
+          <select id="transaction-type-filter" class="sr-only" tabindex="-1" aria-hidden="true"><option value="all">Semua jenis</option><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option><option value="transfer">Transfer</option><option value="cash_withdrawal">Tarik tunai</option><option value="receivable_payment">Bayar piutang</option><option value="liability_payment">Bayar kewajiban</option><option value="receivable_create">Piutang baru</option><option value="liability_create">Kewajiban baru</option></select>
+          <select id="transaction-account-filter" aria-label="Filter rekening"><option value="all">Semua rekening</option></select>
+          <select id="transaction-category-filter" aria-label="Filter kategori"><option value="all">Semua kategori</option></select>
+        </div>
+        <div class="tx-summary" id="tx-summary"></div>
+        <div id="transaction-table" class="tx-feed"></div>
+      </section>
+
+      <!-- REKENING -->
+      <section class="content hidden" id="view-accounts">
+        <div class="section-head sh-desk"><div><p class="muted">Sumber saldo</p><h2>Rekening</h2></div><button class="primary-btn desk-only" id="add-account"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Tambah rekening</button></div>
+        <div class="net-worth" id="accounts-total"></div>
+        <div id="accounts-grid" class="wallet-grid"></div>
+        <button class="add-tile mobile-only" id="add-account-m"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Tambah rekening</button>
+      </section>
+
+      <!-- PIUTANG & KEWAJIBAN -->
+      <section class="content hidden" id="view-debts">
+        <div class="section-head sh-desk"><div><p class="muted">Uang yang belum selesai</p><h2>Piutang &amp; Kewajiban</h2></div><div class="button-row desk-only"><button class="ghost-btn" id="add-receivable"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Piutang</button><button class="primary-btn" id="add-liability"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Kewajiban</button></div></div>
+        <div class="debt-tabs" role="tablist"><button class="tab-btn active" data-debt-tab="receivables" role="tab"><span class="dot rec"></span>Piutang</button><button class="tab-btn" data-debt-tab="liabilities" role="tab"><span class="dot lia"></span>Kewajiban</button></div>
+        <div id="debt-summary" class="debt-summary"></div>
+        <div id="debts-list" class="debt-list"></div>
+        <button class="add-tile mobile-only" id="add-debt-m"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg><span id="add-debt-m-label">Tambah piutang</span></button>
+      </section>
+
+      <!-- LAPORAN -->
+      <section class="content hidden" id="view-reports">
+        <div class="section-head sh-report"><div><p class="muted">Analisis</p><h2>Laporan keuangan</h2></div><div class="button-row"><button class="ghost-btn" id="export-csv">Ekspor CSV</button><button class="primary-btn" id="export-pdf">Ekspor PDF</button></div></div>
+        <div class="panel report-filters">
+          <label>Periode<select id="report-period"><option value="month">Bulanan</option><option value="week">Mingguan</option><option value="day">Harian</option></select></label>
+          <label>Bulan<input type="month" id="report-month"></label>
+          <label>Rekening<select id="report-account"><option value="all">Semua rekening</option></select></label>
+          <label>Kategori<select id="report-category"><option value="all">Semua kategori</option></select></label>
+          <label class="check-label"><input type="checkbox" id="exclude-payroll"><span>Kecualikan pembayaran karyawan</span></label>
+        </div>
+        <div class="report-hero">
+          <div class="rh-net"><small>Selisih arus kas</small><b id="report-net">Rp0</b><span id="report-net-note" class="rh-note"></span></div>
+          <div class="rh-pair"><div class="rh-box in"><small>Pemasukan</small><b id="report-income">Rp0</b></div><div class="rh-box out"><small>Pengeluaran</small><b id="report-expense">Rp0</b></div></div>
+        </div>
+        <div class="dashboard-grid report-grid">
+          <article class="panel chart-panel"><div class="panel-head"><div><h3>Perkembangan</h3><p class="muted">Harian pada periode aktif</p></div><span class="legend"><i class="income-dot"></i>Masuk<i class="expense-dot"></i>Keluar</span></div><div class="chart-box"><canvas id="report-chart" height="250"></canvas><div class="chart-tip" id="report-tip" hidden></div></div></article>
+          <article class="panel"><div class="panel-head"><div><h3>Pengeluaran per kategori</h3><p class="muted">Periode aktif</p></div></div><div id="category-breakdown"></div></article>
+        </div>
+        <article class="panel table-panel"><div class="panel-head pad"><div><h3>Rincian transaksi</h3><p class="muted">Pemasukan dan pengeluaran pada periode ini</p></div></div><div id="report-table"></div></article>
+      </section>
+
+      <!-- PENGATURAN -->
+      <section class="content hidden" id="view-settings">
+        <div class="section-head sh-desk"><div><p class="muted">Pengaturan lokal</p><h2>Data &amp; Pengaturan</h2></div></div>
+        <div class="settings-grid">
+          <article class="panel settings-card"><span class="set-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-save"/></svg></span><h3>Backup</h3><p class="muted">Simpan seluruh rekening, transaksi, dan data piutang/kewajiban ke file JSON.</p><button class="primary-btn" id="backup-json">Unduh backup JSON</button></article>
+          <article class="panel settings-card"><span class="set-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-restore"/></svg></span><h3>Restore</h3><p class="muted">Pulihkan data dari file JSON yang dibuat oleh duitw.</p><input type="file" id="restore-json" accept=".json,application/json"><button class="ghost-btn" id="restore-btn">Pulihkan data</button></article>
+          <article class="panel settings-card"><span class="set-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-moon"/></svg></span><h3>Preferensi</h3><label class="toggle-row"><span>Mode gelap</span><input type="checkbox" checked disabled><span class="toggle-note">Aktif</span></label><p class="muted small">duitw menggunakan dark mode sebagai tampilan utama.</p></article>
+          <article class="panel settings-card danger-card"><span class="set-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg></span><h3>Zona berbahaya</h3><p class="muted">Hapus seluruh data lokal dan mulai dari kondisi kosong.</p><button class="danger-btn" id="clear-data">Hapus semua data</button></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Navigasi bawah">
+    <button data-view="dashboard" class="active"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg><span>Home</span></button>
+    <button data-view="transactions"><svg class="ic" viewBox="0 0 24 24"><use href="#i-swap"/></svg><span>Transaksi</span></button>
+    <button class="fab" id="fab-add" aria-label="Tambah transaksi"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button>
+    <button data-view="accounts"><svg class="ic" viewBox="0 0 24 24"><use href="#i-wallet"/></svg><span>Rekening</span></button>
+    <button data-view="debts"><svg class="ic" viewBox="0 0 24 24"><use href="#i-hand"/></svg><span>Utang</span></button>
+    <button data-view="reports"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg><span>Laporan</span></button>
+  </nav>
+
+  <dialog id="transaction-dialog" class="modal"><form method="dialog" id="transaction-form"><div class="grab"></div><div class="modal-head"><div><p class="muted">Catat aktivitas</p><h3 id="transaction-modal-title">Tambah transaksi</h3></div><button class="icon-btn" value="cancel" aria-label="Tutup"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+    <div class="type-pills"><button type="button" data-tx-type="income">Pemasukan</button><button type="button" data-tx-type="expense" class="active">Pengeluaran</button><button type="button" data-tx-type="transfer">Transfer</button><button type="button" data-tx-type="cash_withdrawal">Tarik tunai</button></div>
+    <input type="hidden" id="tx-id"><input type="hidden" id="tx-type" value="expense">
+    <label class="amount-field"><span>Rp</span><input id="tx-amount" inputmode="numeric" required placeholder="0" aria-label="Nominal"></label>
+    <div class="form-grid"><label>Nama transaksi<input id="tx-name" required placeholder="Contoh: Makan siang"></label><label>Tanggal<input type="date" id="tx-date" required></label><label>Kategori<select id="tx-category"></select></label><label id="tx-account-wrap">Rekening<select id="tx-account"></select></label><label id="tx-to-wrap" class="hidden">Ke rekening<select id="tx-to-account"></select></label><label class="span-2">Catatan<textarea id="tx-note" rows="2" placeholder="Opsional"></textarea></label></div>
+    <div class="modal-actions"><button type="button" class="ghost-btn" id="tx-cancel">Batal</button><button class="primary-btn">Simpan transaksi</button></div>
+  </form></dialog>
+
+  <dialog id="account-dialog" class="modal"><form method="dialog" id="account-form"><div class="grab"></div><div class="modal-head"><div><p class="muted">Kelola sumber dana</p><h3 id="account-modal-title">Tambah rekening</h3></div><button class="icon-btn" value="cancel" aria-label="Tutup"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+    <input type="hidden" id="account-id"><div class="form-grid"><label>Nama rekening<input id="account-name" required placeholder="SeaBank"></label><label>Jenis<select id="account-type"><option>Bank</option><option>E-wallet</option><option>Tunai</option><option>Lainnya</option></select></label><label>Saldo awal<input id="account-opening" inputmode="numeric" placeholder="Rp 0"></label><label>Catatan<textarea id="account-note" rows="2" placeholder="Opsional"></textarea></label></div>
+    <p class="form-help">Saldo awal adalah titik awal manual. Tidak dibuat sebagai transaksi historis.</p><div class="modal-actions"><button type="button" class="ghost-btn" id="account-cancel">Batal</button><button class="primary-btn">Simpan rekening</button></div>
+  </form></dialog>
+
+  <dialog id="debt-dialog" class="modal"><form method="dialog" id="debt-form"><div class="grab"></div><div class="modal-head"><div><p class="muted" id="debt-modal-eyebrow">Kelola</p><h3 id="debt-modal-title">Tambah piutang</h3></div><button class="icon-btn" value="cancel" aria-label="Tutup"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+    <input type="hidden" id="debt-id"><input type="hidden" id="debt-kind" value="receivable">
+    <div class="form-grid"><label>Nama orang / pihak<input id="debt-party" required placeholder="Nama pihak"></label><label>Nominal awal<input id="debt-amount" inputmode="numeric" required placeholder="Rp 0"></label><label>Tanggal transaksi<input type="date" id="debt-date" required></label><label>Jatuh tempo<input type="date" id="debt-due"></label><label>Rekening<select id="debt-account"></select></label><label>Catatan<textarea id="debt-note" rows="2" placeholder="Opsional"></textarea></label></div>
+    <p class="form-help" id="debt-help"></p><div class="modal-actions"><button type="button" class="ghost-btn" id="debt-cancel">Batal</button><button class="primary-btn">Simpan</button></div>
+  </form></dialog>
+
+  <dialog id="payment-dialog" class="modal"><form method="dialog" id="payment-form"><div class="grab"></div><div class="modal-head"><div><p class="muted">Catat pembayaran</p><h3 id="payment-title">Pembayaran</h3></div><button class="icon-btn" value="cancel" aria-label="Tutup"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+    <input type="hidden" id="payment-debt-id"><input type="hidden" id="payment-kind"><div class="form-grid"><label>Nominal pembayaran<input id="payment-amount" inputmode="numeric" required placeholder="Rp 0"></label><label>Tanggal<input type="date" id="payment-date" required></label><label>Rekening<select id="payment-account"></select></label><label>Catatan<textarea id="payment-note" rows="2" placeholder="Opsional"></textarea></label></div>
+    <div class="modal-actions"><button type="button" class="ghost-btn" id="payment-cancel">Batal</button><button class="primary-btn">Simpan pembayaran</button></div>
+  </form></dialog>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14.5" r="1.1"/></symbol>
+    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M12 3v18M16.5 7.5c-.6-1.3-2.2-2-4.5-2-2.6 0-4 1.1-4 2.8 0 4 8.5 1.8 8.5 6 0 1.8-1.7 2.9-4.5 2.9-2.5 0-4.2-.8-4.8-2.4"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M17 7 7 17M16 17H7V8"/></symbol>
+    <symbol id="i-in-arrow" viewBox="0 0 24 24"><path d="M12 3v14M6 11l6 6 6-6M5 21h14"/></symbol>
+    <symbol id="i-out-arrow" viewBox="0 0 24 24"><path d="M12 21V7M6 13l6-6 6 6M5 3h14"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+    <symbol id="i-restore" viewBox="0 0 24 24"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24"><path d="M3 10 12 4l9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  </defs></svg>
+
+  <script src="app.js"></script>
+</body>
+</html>
